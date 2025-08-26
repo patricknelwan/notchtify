@@ -29,9 +29,22 @@
 		488F42F82E5DD49B0007E159 /* notchtifyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = notchtifyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		488F43182E5DD9370007E159 /* Exceptions for "notchtify" folder in "notchtify" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 488F42DF2E5DD49A0007E159 /* notchtify */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		488F42E22E5DD49A0007E159 /* notchtify */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				488F43182E5DD9370007E159 /* Exceptions for "notchtify" folder in "notchtify" target */,
+			);
 			path = notchtify;
 			sourceTree = "<group>";
 		};
@@ -398,6 +411,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = notchtify/Info.plist;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notchtify needs permission to control Spotify playback";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -423,6 +438,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = notchtify/Info.plist;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Notchtify needs permission to control Spotify playback";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
