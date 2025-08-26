@@ -10,11 +10,13 @@ class SpotifyManager: ObservableObject {
     @Published var trackPosition: Double = 0
     @Published var trackDuration: Double = 0
     @Published var autoExpand = true
-    @Published var showProgress = false // Disable by default since it's unreliable
+    @Published var showProgress = false // wip
+    @Published var albumArtImage: NSImage?
     
     private var timer: Timer?
     private var retryCount = 0
     private let maxRetries = 3
+    private let webAPIManager = SpotifyWebAPIManager()
     
     init() {
         checkSpotifyStatus()
@@ -91,7 +93,6 @@ class SpotifyManager: ObservableObject {
                     print("🎵 Spotify response: \(resultString)")
                     
                     if resultString.contains("|||") {
-                        // Successfully got track info
                         let components = resultString.components(separatedBy: "|||")
                         if components.count == 3 {
                             self.currentTrack = components[0].isEmpty ? "No track playing" : components[0]
@@ -100,19 +101,16 @@ class SpotifyManager: ObservableObject {
                             self.retryCount = 0
                         }
                     } else if resultString == "SPOTIFY_NO_TRACK" {
-                        // Spotify is running but no track info
                         self.currentTrack = "No track playing"
                         self.currentArtist = "Unknown artist"
                         self.isPlaying = false
                     } else if resultString == "SPOTIFY_ERROR" && self.retryCount < self.maxRetries {
-                        // Retry connection
                         self.retryCount += 1
                         print("🔄 Retrying Spotify connection (\(self.retryCount)/\(self.maxRetries))")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                             self.attemptSpotifyConnection()
                         }
                     } else {
-                        // All retries failed
                         self.currentTrack = "Spotify not responding"
                         self.currentArtist = "Try restarting Spotify"
                         self.isPlaying = false
@@ -123,12 +121,48 @@ class SpotifyManager: ObservableObject {
     }
     
     private func updateSpotifyStatus() {
-        guard isSpotifyRunning else {
-            checkSpotifyStatus() // Re-check if Spotify was started
-            return
-        }
+        guard isSpotifyRunning else { return }
         
-        attemptSpotifyConnection()
+        let script = """
+        tell application "Spotify"
+            try
+                set trackName to name of current track
+                set artistName to artist of current track
+                set playingState to (player state is playing)
+                return trackName & "|||" & artistName & "|||" & (playingState as string)
+            on error
+                return "NO_TRACK|||Unknown|||false"
+            end try
+        end tell
+        """
+        
+        executeAppleScript(script) { result in
+            DispatchQueue.main.async {
+                if let resultString = result?.stringValue {
+                    let components = resultString.components(separatedBy: "|||")
+                    if components.count == 3 {
+                        let newTrack = components[0] == "NO_TRACK" ? "No track playing" : components[0]
+                        let newArtist = components[1] == "Unknown" ? "Unknown artist" : components[1]
+                        let newIsPlaying = components[2] == "true"
+                        
+                        if self.currentTrack != newTrack || self.currentArtist != newArtist {
+                            self.currentTrack = newTrack
+                            self.currentArtist = newArtist
+                            
+                            if !newTrack.isEmpty && newTrack != "No track playing" {
+                                self.webAPIManager.fetchAlbumArt(track: newTrack, artist: newArtist) { image in
+                                    self.albumArtImage = image
+                                }
+                            } else {
+                                self.albumArtImage = nil
+                            }
+                        }
+                        
+                        self.isPlaying = newIsPlaying
+                    }
+                }
+            }
+        }
     }
     
     private func resetSpotifyInfo() {
@@ -168,7 +202,6 @@ class SpotifyManager: ObservableObject {
             if let resultString = result?.stringValue {
                 print("🎮 Command '\(command)' result: \(resultString)")
                 if resultString == "SUCCESS" {
-                    // Wait a moment then update status
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.updateSpotifyStatus()
                     }

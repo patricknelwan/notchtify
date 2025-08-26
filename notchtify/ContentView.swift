@@ -6,7 +6,7 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 30) {
-            // Header
+//            Header
             VStack {
                 Text("Notchtify")
                     .font(.largeTitle)
@@ -16,32 +16,14 @@ struct ContentView: View {
                     .foregroundColor(.secondary)
             }
             
-            // Spotify Dynamic Island
+//            Spotify Dynamic Island
             SpotifyDynamicIsland(
                 spotifyManager: spotifyManager,
                 isExpanded: $isExpanded
             )
             
-            // Connection Status
-            HStack {
-                Circle()
-                    .fill(spotifyManager.isSpotifyRunning ? .green : .red)
-                    .frame(width: 8, height: 8)
-                
-                Text(spotifyManager.isSpotifyRunning ? "Connected to Spotify" : "Spotify not detected")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            
-            // Controls
+//            Controls
             VStack(spacing: 15) {
-                Button("Toggle Island") {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        isExpanded.toggle()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                
                 if spotifyManager.isSpotifyRunning {
                     HStack(spacing: 15) {
                         Button("⏮") {
@@ -61,12 +43,7 @@ struct ContentView: View {
                     }
                 }
                 
-                Button("Refresh Spotify Status") {
-                    spotifyManager.checkSpotifyStatus()
-                }
-                .buttonStyle(.bordered)
-                
-                // Settings
+//                Settings
                 VStack(alignment: .leading, spacing: 8) {
                     Toggle("Auto-expand when music changes", isOn: $spotifyManager.autoExpand)
                     Toggle("Show track progress", isOn: $spotifyManager.showProgress)
@@ -90,7 +67,6 @@ struct SpotifyDynamicIsland: View {
     @Binding var isExpanded: Bool
     
     var body: some View {
-        // Using UnevenRoundedRectangle for sharp top, rounded bottom
         UnevenRoundedRectangle(
             cornerRadii: .init(
                 topLeading: 0,      // Sharp top left
@@ -116,7 +92,6 @@ struct SpotifyDynamicIsland: View {
                 isExpanded.toggle()
             }
         }
-        // FIXED: Updated onChange for macOS 14.0+
         .onChange(of: spotifyManager.currentTrack) { oldValue, newValue in
             if spotifyManager.autoExpand && spotifyManager.isPlaying {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
@@ -141,34 +116,31 @@ struct SpotifyDynamicIsland: View {
     }
 }
 
-
-
 struct SpotifyCompactView: View {
     @ObservedObject var spotifyManager: SpotifyManager
     
     var body: some View {
         HStack(spacing: 8) {
             if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
-                // Mini Album Cover (replaces green circle)
-                AsyncImage(url: URL(string: "https://via.placeholder.com/20x20/333333/FFFFFF?text=♫")) { image in
-                    image
+                if let albumArt = spotifyManager.albumArtImage {
+                    Image(nsImage: albumArt)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                } placeholder: {
+                        .frame(width: 20, height: 20)
+                        .cornerRadius(4)
+                } else {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color.gray.opacity(0.3))
+                        .frame(width: 20, height: 20)
                         .overlay {
                             Image(systemName: "music.note")
                                 .foregroundColor(.green)
                                 .font(.system(size: 8))
                         }
                 }
-                .frame(width: 20, height: 20)
-                .cornerRadius(4)
                 
-                Spacer() // Pushes audio visualization to the right
+                Spacer()
                 
-                // Audio visualization
                 HStack(spacing: 1) {
                     ForEach(0..<3) { index in
                         RoundedRectangle(cornerRadius: 1)
@@ -204,31 +176,29 @@ struct SpotifyCompactView: View {
     }
 }
 
-
 struct SpotifyExpandedView: View {
     @ObservedObject var spotifyManager: SpotifyManager
     
     var body: some View {
         VStack(spacing: 15) {
             if spotifyManager.isSpotifyRunning {
-                // Track Info with Album Art
                 HStack(spacing: 12) {
-                    // Album Art (placeholder for now - can be enhanced to fetch real cover)
-                    AsyncImage(url: URL(string: "https://via.placeholder.com/50x50/333333/FFFFFF?text=♫")) { image in
-                        image
+                    if let albumArt = spotifyManager.albumArtImage {
+                        Image(nsImage: albumArt)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                    } placeholder: {
+                            .frame(width: 50, height: 50)
+                            .cornerRadius(8)
+                    } else {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.gray.opacity(0.3))
+                            .frame(width: 50, height: 50)
                             .overlay {
                                 Image(systemName: "music.note")
                                     .foregroundColor(.gray)
                                     .font(.title2)
                             }
                     }
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(8)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(spotifyManager.currentTrack.isEmpty ? "No track" : spotifyManager.currentTrack)
@@ -252,7 +222,7 @@ struct SpotifyExpandedView: View {
                     Spacer()
                 }
                 
-                // Progress Bar (if enabled)
+//                Progress Bar (WIP)
                 if spotifyManager.showProgress && spotifyManager.trackDuration > 0 {
                     VStack(spacing: 4) {
                         ProgressView(value: spotifyManager.trackPosition, total: spotifyManager.trackDuration)
@@ -273,7 +243,7 @@ struct SpotifyExpandedView: View {
                     }
                 }
                 
-                // Playback Controls
+//                Playback Control
                 HStack(spacing: 25) {
                     Button {
                         spotifyManager.previousTrack()
@@ -330,7 +300,6 @@ struct SpotifyExpandedView: View {
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 }
-
 
 #Preview {
     ContentView()
