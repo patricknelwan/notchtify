@@ -2,15 +2,14 @@ import Foundation
 import SwiftUI
 
 class SpotifyWebAPIManager: ObservableObject {
-    private let clientId = "YOUR_CLIENT_ID"
-    private let clientSecret = "YOUR_CLIENT_SECRET"
+    private let clientId = "ec991827686849cfa4298655a341a7a5"
+    private let clientSecret = "4432b3b584cd4fb2af80ec7daa16bce9"
     private var accessToken: String?
     
     init() {
         getClientCredentialsToken()
     }
     
-    // Get access token using Client Credentials flow (for search only)
     private func getClientCredentialsToken() {
         let url = URL(string: "https://accounts.spotify.com/api/token")!
         var request = URLRequest(url: url)
@@ -43,7 +42,6 @@ class SpotifyWebAPIManager: ObservableObject {
         }.resume()
     }
     
-    // Search for track and get album art
     func fetchAlbumArt(track: String, artist: String, completion: @escaping (NSImage?) -> Void) {
         guard let token = accessToken else {
             completion(nil)
@@ -74,7 +72,6 @@ class SpotifyWebAPIManager: ObservableObject {
                    let albumArt = firstTrack.album.images.first,
                    let imageUrl = URL(string: albumArt.url) {
                     
-                    // Download the album art image
                     URLSession.shared.dataTask(with: imageUrl) { imageData, _, _ in
                         guard let imageData = imageData,
                               let image = NSImage(data: imageData) else {
@@ -97,7 +94,6 @@ class SpotifyWebAPIManager: ObservableObject {
     }
 }
 
-// Response structures
 struct TokenResponse: Codable {
     let access_token: String
     let token_type: String
