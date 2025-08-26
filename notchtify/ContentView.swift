@@ -149,10 +149,24 @@ struct SpotifyCompactView: View {
     var body: some View {
         HStack(spacing: 8) {
             if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
-                // Spotify green dot
-                Circle()
-                    .fill(.green)
-                    .frame(width: 8, height: 8)
+                // Mini Album Cover (replaces green circle)
+                AsyncImage(url: URL(string: "https://via.placeholder.com/20x20/333333/FFFFFF?text=♫")) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.3))
+                        .overlay {
+                            Image(systemName: "music.note")
+                                .foregroundColor(.green)
+                                .font(.system(size: 8))
+                        }
+                }
+                .frame(width: 20, height: 20)
+                .cornerRadius(4)
+                
+                Spacer() // Pushes audio visualization to the right
                 
                 // Audio visualization
                 HStack(spacing: 1) {
@@ -164,25 +178,22 @@ struct SpotifyCompactView: View {
                     }
                 }
                 
-                Text("♫ \(spotifyManager.currentTrack)")
-                    .font(.caption)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                
             } else if spotifyManager.isSpotifyRunning {
                 Image(systemName: "music.note")
                     .foregroundColor(.green)
                     .font(.caption)
                 
+                Spacer()
+                
                 Text("Spotify ready")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
             } else {
-                // Fixed: Use existing symbol instead of non-existent one
                 Image(systemName: "music.note")
                     .foregroundColor(.red)
                     .font(.caption)
+                
+                Spacer()
                 
                 Text("No Spotify")
                     .font(.caption)
@@ -200,17 +211,24 @@ struct SpotifyExpandedView: View {
     var body: some View {
         VStack(spacing: 15) {
             if spotifyManager.isSpotifyRunning {
-                // Track Info
+                // Track Info with Album Art
                 HStack(spacing: 12) {
-                    // Album Art Placeholder
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(.green.opacity(0.2))
-                        .frame(width: 50, height: 50)
-                        .overlay {
-                            Image(systemName: "music.note")
-                                .foregroundColor(.green)
-                                .font(.title2)
-                        }
+                    // Album Art (placeholder for now - can be enhanced to fetch real cover)
+                    AsyncImage(url: URL(string: "https://via.placeholder.com/50x50/333333/FFFFFF?text=♫")) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay {
+                                Image(systemName: "music.note")
+                                    .foregroundColor(.gray)
+                                    .font(.title2)
+                            }
+                    }
+                    .frame(width: 50, height: 50)
+                    .cornerRadius(8)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text(spotifyManager.currentTrack.isEmpty ? "No track" : spotifyManager.currentTrack)
@@ -312,6 +330,7 @@ struct SpotifyExpandedView: View {
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 }
+
 
 #Preview {
     ContentView()
