@@ -18,11 +18,20 @@ struct NotchtifyApp: App {
     }
 }
 
+class FloatingWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        self.isMovableByWindowBackground = true
+    }
+}
+
 class FloatingWindowManager: ObservableObject {
     private var floatingWindow: NSWindow?
     
     func createFloatingWindow(spotifyManager: SpotifyManager) {
-        
         let floatingView = FloatingDynamicIslandView()
             .environmentObject(spotifyManager)
         
@@ -35,33 +44,30 @@ class FloatingWindowManager: ObservableObject {
         
         guard let window = floatingWindow else { return }
         
-//        Configure for menu bar floating
-        window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1) // Above menu bar
+        // Higher window level to float above menu bar but allow clicks
+        window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1)
         window.isOpaque = false
         window.hasShadow = false
         window.backgroundColor = NSColor.clear
         window.isMovableByWindowBackground = false
         window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = false
-        window.acceptsMouseMovedEvents = true
         
-//        Set SwiftUI view as content
         window.contentView = NSHostingView(rootView: floatingView)
         
-        positionInMenuBar(window)
-        
-        window.makeKeyAndOrderFront(nil)
+        positionInNotch(window) // Changed method name for clarity
+        window.orderFront(nil)
     }
     
-    private func positionInMenuBar(_ window: NSWindow) {
+    private func positionInNotch(_ window: NSWindow) {
         guard let screen = NSScreen.main else { return }
         
         let screenFrame = screen.frame
-        let menuBarHeight: CGFloat = 24 // Standard menu bar height
         let windowSize = window.frame.size
         
+        // Position directly at the top center (in the notch area)
         let x = screenFrame.midX - (windowSize.width / 2)
-        let y = screenFrame.maxY - menuBarHeight - windowSize.height + menuBarHeight // Position within menu bar
+        let y = screenFrame.maxY - windowSize.height // Position at very top
         
         window.setFrame(
             NSRect(x: x, y: y, width: windowSize.width, height: windowSize.height),
@@ -70,6 +76,8 @@ class FloatingWindowManager: ObservableObject {
         )
     }
 }
+
+
 
 
 struct FloatingDynamicIslandView: View {
@@ -93,6 +101,4 @@ struct FloatingDynamicIslandView: View {
         }
     }
 }
-
-
 

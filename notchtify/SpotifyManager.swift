@@ -10,13 +10,15 @@ class SpotifyManager: ObservableObject {
     @Published var trackPosition: Double = 0
     @Published var trackDuration: Double = 0
     @Published var autoExpand = true
-    @Published var showProgress = false // wip
+    @Published var showProgress = false
     @Published var albumArtImage: NSImage?
+    @Published var hoverEffectEnabled = true
     
     private var timer: Timer?
     private var retryCount = 0
     private let maxRetries = 3
     private let webAPIManager = SpotifyWebAPIManager()
+    private var hasInitiallyLoaded = false
     
     init() {
         checkSpotifyStatus()
@@ -26,11 +28,30 @@ class SpotifyManager: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
             self.updateSpotifyStatus()
         }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.forceInitialAlbumArtFetch()
+        }
     }
     
     func stopMonitoring() {
         timer?.invalidate()
         timer = nil
+    }
+    
+    private func forceInitialAlbumArtFetch() {
+        guard !hasInitiallyLoaded && isSpotifyRunning && isPlaying else { return }
+        
+        if !currentTrack.isEmpty && currentTrack != "No track playing" && albumArtImage == nil {
+            print("🎨 Force fetching album art for: \(currentTrack) - \(currentArtist)")
+            webAPIManager.fetchAlbumArt(track: currentTrack, artist: currentArtist) { image in
+                DispatchQueue.main.async {
+                    self.albumArtImage = image
+                    self.hasInitiallyLoaded = true
+                    print(image != nil ? "✅ Initial album art loaded" : "❌ Initial album art failed")
+                }
+            }
+        }
     }
     
     func checkSpotifyStatus() {
@@ -149,12 +170,16 @@ class SpotifyManager: ObservableObject {
                             self.currentTrack = newTrack
                             self.currentArtist = newArtist
                             
+                            self.albumArtImage = nil
+                            
                             if !newTrack.isEmpty && newTrack != "No track playing" {
-                                self.webAPIManager.fetchAlbumArt(track: newTrack, artist: newArtist) { image in
-                                    self.albumArtImage = image
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    self.webAPIManager.fetchAlbumArt(track: newTrack, artist: newArtist) { image in
+                                        DispatchQueue.main.async {
+                                            self.albumArtImage = image
+                                        }
+                                    }
                                 }
-                            } else {
-                                self.albumArtImage = nil
                             }
                         }
                         
@@ -172,6 +197,7 @@ class SpotifyManager: ObservableObject {
         isPlaying = false
         trackPosition = 0
         trackDuration = 0
+        albumArtImage = nil
     }
     
     func togglePlayPause() {
