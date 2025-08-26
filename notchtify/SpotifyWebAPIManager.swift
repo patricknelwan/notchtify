@@ -2,11 +2,21 @@ import Foundation
 import SwiftUI
 
 class SpotifyWebAPIManager: ObservableObject {
-    private let clientId = "ec991827686849cfa4298655a341a7a5"
-    private let clientSecret = "4432b3b584cd4fb2af80ec7daa16bce9"
+    private let clientId: String
+    private let clientSecret: String
     private var accessToken: String?
     
     init() {
+        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
+              let plist = NSDictionary(contentsOfFile: path),
+              let clientId = plist["SpotifyClientID"] as? String,
+              let clientSecret = plist["SpotifyClientSecret"] as? String else {
+            fatalError("Could not load Spotify API credentials from Config.plist")
+        }
+        
+        self.clientId = clientId
+        self.clientSecret = clientSecret
+        
         getClientCredentialsToken()
     }
     
