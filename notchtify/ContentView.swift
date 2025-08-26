@@ -90,38 +90,46 @@ struct SpotifyDynamicIsland: View {
     @Binding var isExpanded: Bool
     
     var body: some View {
-        RoundedRectangle(cornerRadius: isExpanded ? 30 : 20)
-            .fill(.black)
-            .frame(
-                width: isExpanded ? 450 : getCompactWidth(),
-                height: isExpanded ? 160 : 40
+        // Using UnevenRoundedRectangle for sharp top, rounded bottom
+        UnevenRoundedRectangle(
+            cornerRadii: .init(
+                topLeading: 0,      // Sharp top left
+                bottomLeading: isExpanded ? 30 : 20,  // Rounded bottom left
+                bottomTrailing: isExpanded ? 30 : 20, // Rounded bottom right
+                topTrailing: 0      // Sharp top right
             )
-            .overlay {
-                if isExpanded {
-                    SpotifyExpandedView(spotifyManager: spotifyManager)
-                } else {
-                    SpotifyCompactView(spotifyManager: spotifyManager)
-                }
+        )
+        .fill(.black)
+        .frame(
+            width: isExpanded ? 450 : getCompactWidth(),
+            height: isExpanded ? 160 : 40
+        )
+        .overlay {
+            if isExpanded {
+                SpotifyExpandedView(spotifyManager: spotifyManager)
+            } else {
+                SpotifyCompactView(spotifyManager: spotifyManager)
             }
-            .onTapGesture {
+        }
+        .onTapGesture {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                isExpanded.toggle()
+            }
+        }
+        // FIXED: Updated onChange for macOS 14.0+
+        .onChange(of: spotifyManager.currentTrack) { oldValue, newValue in
+            if spotifyManager.autoExpand && spotifyManager.isPlaying {
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    isExpanded.toggle()
+                    isExpanded = true
                 }
-            }
-            .onChange(of: spotifyManager.currentTrack) { _ in
-                if spotifyManager.autoExpand && spotifyManager.isPlaying {
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        isExpanded = true
-                    }
-                    
-                    // Auto-collapse after 3 seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                            isExpanded = false
-                        }
+                        isExpanded = false
                     }
                 }
             }
+        }
     }
     
     private func getCompactWidth() -> CGFloat {
@@ -132,6 +140,8 @@ struct SpotifyDynamicIsland: View {
         }
     }
 }
+
+
 
 struct SpotifyCompactView: View {
     @ObservedObject var spotifyManager: SpotifyManager

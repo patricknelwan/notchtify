@@ -22,14 +22,14 @@ class FloatingWindowManager: ObservableObject {
     private var floatingWindow: NSWindow?
     
     func createFloatingWindow(spotifyManager: SpotifyManager) {
-        print("🏝️ Creating floating window...")
+        print("🏝️ Creating menu bar floating window...")
         
         let floatingView = FloatingDynamicIslandView()
             .environmentObject(spotifyManager)
         
-        // Create a LARGE fixed window that can contain both compact and expanded states
+        // Create window sized for menu bar area
         floatingWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 200), // Large enough for expanded state
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -37,37 +37,38 @@ class FloatingWindowManager: ObservableObject {
         
         guard let window = floatingWindow else { return }
         
-        // Configure window
-        window.level = .floating
+        // Configure for menu bar floating
+        window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1) // Above menu bar
         window.isOpaque = false
         window.hasShadow = false
         window.backgroundColor = NSColor.clear
         window.isMovableByWindowBackground = false
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = false
         window.acceptsMouseMovedEvents = true
         
         // Set SwiftUI view as content
         window.contentView = NSHostingView(rootView: floatingView)
         
-        // Position at notch location
-        positionAtNotchLocation(window)
+        // Position in menu bar area
+        positionInMenuBar(window)
         
         // Show window
         window.makeKeyAndOrderFront(nil)
         
-        print("✅ Fixed-size floating window created!")
+        print("✅ Menu bar floating island created!")
     }
     
-    private func positionAtNotchLocation(_ window: NSWindow) {
+    private func positionInMenuBar(_ window: NSWindow) {
         guard let screen = NSScreen.main else { return }
         
         let screenFrame = screen.frame
+        let menuBarHeight: CGFloat = 24 // Standard menu bar height
         let windowSize = window.frame.size
         
-        // Position so the window is centered at the notch
+        // Position in the menu bar area, centered horizontally
         let x = screenFrame.midX - (windowSize.width / 2)
-        let y = screenFrame.maxY - windowSize.height - 2
+        let y = screenFrame.maxY - menuBarHeight - windowSize.height + menuBarHeight // Position within menu bar
         
         window.setFrame(
             NSRect(x: x, y: y, width: windowSize.width, height: windowSize.height),
@@ -75,28 +76,27 @@ class FloatingWindowManager: ObservableObject {
             animate: false
         )
         
-        print("📍 Fixed window positioned at notch center")
+        print("📍 Positioned in menu bar at: (\(x), \(y))")
     }
 }
+
 
 struct FloatingDynamicIslandView: View {
     @EnvironmentObject var spotifyManager: SpotifyManager
     @State private var isExpanded = false
     
     var body: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                SpotifyDynamicIsland(
-                    spotifyManager: spotifyManager,
-                    isExpanded: $isExpanded
-                )
-                
-                Spacer()
-            }
+        VStack(spacing: 0) {
+            // The Dynamic Island at the top
+            SpotifyDynamicIsland(
+                spotifyManager: spotifyManager,
+                isExpanded: $isExpanded
+            )
+            
+            // Spacer pushes everything to the top, allowing downward expansion
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.clear)
         .allowsHitTesting(true)
         .contentShape(Rectangle())
@@ -105,5 +105,6 @@ struct FloatingDynamicIslandView: View {
         }
     }
 }
+
 
 
