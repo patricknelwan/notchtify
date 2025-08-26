@@ -2,49 +2,38 @@ import SwiftUI
 
 @main
 struct NotchtifyApp: App {
-    @StateObject private var spotifyManager = SpotifyManager()
-    
     var body: some Scene {
-        // Main control window (can be hidden)
         WindowGroup {
             ContentView()
-                .environmentObject(spotifyManager)
         }
-        .windowStyle(.hiddenTitleBar)
         
-        // Floating Dynamic Island
-        WindowGroup("Dynamic Island") {
-            FloatingDynamicIsland()
-                .environmentObject(spotifyManager)
+        // Simple floating test
+        WindowGroup("Test Float") {
+            Text("🏝️ I should be floating!")
+                .font(.title)
+                .padding(20)
+                .background(Color.black)
+                .foregroundColor(.white)
+                .cornerRadius(20)
+                .background(WindowMaker { window in
+                    window?.level = .floating
+                    window?.backgroundColor = .clear
+                })
         }
-        .windowLevel(.floating)              // Always on top
-        .windowStyle(.plain)                 // No title bar
-        .windowResizability(.contentSize)    // Can't resize
-        .defaultWindowPlacement { content, context in
-            // Position at top center of screen
-            let displayBounds = context.defaultDisplay.visibleRect
-            let size = content.sizeThatFits(.unspecified)
-            let position = CGPoint(
-                x: displayBounds.midX - (size.width / 2),
-                y: displayBounds.maxY - size.height - 20
-            )
-            return WindowPlacement(position, size: size)
-        }
+        .windowStyle(.plain)
     }
 }
 
-struct FloatingDynamicIsland: View {
-    @EnvironmentObject var spotifyManager: SpotifyManager
-    @State private var isExpanded = false
+struct WindowMaker: NSViewRepresentable {
+    let callback: (NSWindow?) -> Void
     
-    var body: some View {
-        SpotifyDynamicIsland(
-            spotifyManager: spotifyManager,
-            isExpanded: $isExpanded
-        )
-        .background(Color.clear)
-        .onAppear {
-            spotifyManager.startMonitoring()
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async { [view] in
+            callback(view.window)
         }
+        return view
     }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
