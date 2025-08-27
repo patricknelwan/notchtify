@@ -20,17 +20,20 @@ struct NotchtifyApp: App {
 
 class FloatingWindowManager: ObservableObject {
     private var floatingWindow: NSWindow?
+    private var builtInScreen: NSScreen?
+    
     @Published var isExpanded = false {
         didSet {
-            // Update window frame instantly without animation
             updateWindowFrameInstantly()
         }
     }
     
     func createFloatingWindow(spotifyManager: SpotifyManager) {
+        builtInScreen = getBuiltInScreen()
+        
         let floatingView = FloatingDynamicIslandView()
             .environmentObject(spotifyManager)
-            .environmentObject(self) // Pass window manager as environment object
+            .environmentObject(self)
         
         floatingWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
@@ -55,25 +58,40 @@ class FloatingWindowManager: ObservableObject {
         window.orderFront(nil)
     }
     
+    private func getBuiltInScreen() -> NSScreen? {
+        // Try multiple methods to find the built-in display
+        
+        // Method 1: Look for built-in display by name
+        if let builtIn = NSScreen.screens.first(where: { screen in
+            screen.localizedName.contains("Built-in") ||
+            screen.localizedName.contains("Retina")
+        }) {
+            return builtIn
+        }
+        
+        // Method 2: The first screen in the array is usually the built-in
+        if let firstScreen = NSScreen.screens.first {
+            return firstScreen
+        }
+        
+        // Method 3: Fallback to main screen
+        return NSScreen.main
+    }
+    
     private func updateWindowFrameInstantly() {
         guard let window = floatingWindow else { return }
         
-        // Get current window position before resize
-        let currentFrame = window.frame
-        
-        // Calculate new dimensions
-        let newWidth: CGFloat = (isExpanded ? 450 : getCompactWidth()) + 40
-        let newHeight: CGFloat = (isExpanded ? 160 : getCompactHeight()) + 2
-        
-        guard let screen = NSScreen.main else { return }
+        // Always use the built-in screen, not the current main screen
+        guard let screen = builtInScreen else { return }
         let screenFrame = screen.frame
         
-        // Calculate the centered X position for the NEW width
+        let newWidth: CGFloat = (isExpanded ? 450 : getCompactWidth()) + 45
+        let newHeight: CGFloat = (isExpanded ? 160 : getCompactHeight()) + 0
+        
         let centeredX = screenFrame.midX - (newWidth / 2)
         
-        // Keep the same Y position (top stays fixed to notch)
         let centeredFrame = NSRect(
-            x: centeredX,  // Recalculated center for new width
+            x: centeredX,
             y: screenFrame.maxY - newHeight,
             width: newWidth,
             height: newHeight
@@ -81,19 +99,10 @@ class FloatingWindowManager: ObservableObject {
         
         window.setFrame(centeredFrame, display: false, animate: false)
     }
-
-
-
-    private func getCompactWidth() -> CGFloat {
-        return 260 // Match your SpotifyDynamicIsland
-    }
-
-    private func getCompactHeight() -> CGFloat {
-        return 40 // Match your SpotifyDynamicIsland
-    }
-
+    
     private func positionInNotch(_ window: NSWindow) {
-        guard let screen = NSScreen.main else { return }
+        // Use built-in screen for initial positioning too
+        guard let screen = builtInScreen else { return }
         
         let screenFrame = screen.frame
         let windowSize = window.frame.size
@@ -107,7 +116,16 @@ class FloatingWindowManager: ObservableObject {
             animate: false
         )
     }
+    
+    private func getCompactWidth() -> CGFloat {
+        return 260
+    }
+    
+    private func getCompactHeight() -> CGFloat {
+        return 40
+    }
 }
+
 
 struct FloatingDynamicIslandView: View {
     @EnvironmentObject var spotifyManager: SpotifyManager
@@ -115,19 +133,16 @@ struct FloatingDynamicIslandView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Container that's 2 pixels larger than the Dynamic Island
             ZStack {
-                // Your perfect Dynamic Island (unchanged)
                 SpotifyDynamicIsland(
                     spotifyManager: spotifyManager,
                     isExpanded: $windowManager.isExpanded
                 )
             }
             .frame(
-                width: (windowManager.isExpanded ? 450 : getCompactWidth()) + 40,
-                height: (windowManager.isExpanded ? 160 : getCompactHeight()) + 2
+                width: (windowManager.isExpanded ? 450 : getCompactWidth()) + 45,
+                height: (windowManager.isExpanded ? 160 : getCompactHeight()) + 0
             )
-            // KEY: This centers the content within the larger frame
             .contentShape(Rectangle())
             
             Spacer()
