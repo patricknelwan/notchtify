@@ -18,22 +18,19 @@ struct NotchtifyApp: App {
     }
 }
 
-class FloatingWindow: NSWindow {
-    override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
-    
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        self.isMovableByWindowBackground = true
-    }
-}
-
 class FloatingWindowManager: ObservableObject {
     private var floatingWindow: NSWindow?
+    @Published var isExpanded = false {
+        didSet {
+            // Update window frame instantly without animation
+            updateWindowFrameInstantly()
+        }
+    }
     
     func createFloatingWindow(spotifyManager: SpotifyManager) {
         let floatingView = FloatingDynamicIslandView()
             .environmentObject(spotifyManager)
+            .environmentObject(self) // Pass window manager as environment object
         
         floatingWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 200),
@@ -58,6 +55,43 @@ class FloatingWindowManager: ObservableObject {
         window.orderFront(nil)
     }
     
+    private func updateWindowFrameInstantly() {
+        guard let window = floatingWindow else { return }
+        
+        // Get current window position before resize
+        let currentFrame = window.frame
+        
+        // Calculate new dimensions
+        let newWidth: CGFloat = (isExpanded ? 450 : getCompactWidth()) + 40
+        let newHeight: CGFloat = (isExpanded ? 160 : getCompactHeight()) + 2
+        
+        guard let screen = NSScreen.main else { return }
+        let screenFrame = screen.frame
+        
+        // Calculate the centered X position for the NEW width
+        let centeredX = screenFrame.midX - (newWidth / 2)
+        
+        // Keep the same Y position (top stays fixed to notch)
+        let centeredFrame = NSRect(
+            x: centeredX,  // Recalculated center for new width
+            y: screenFrame.maxY - newHeight,
+            width: newWidth,
+            height: newHeight
+        )
+        
+        window.setFrame(centeredFrame, display: false, animate: false)
+    }
+
+
+
+    private func getCompactWidth() -> CGFloat {
+        return 260 // Match your SpotifyDynamicIsland
+    }
+
+    private func getCompactHeight() -> CGFloat {
+        return 40 // Match your SpotifyDynamicIsland
+    }
+
     private func positionInNotch(_ window: NSWindow) {
         guard let screen = NSScreen.main else { return }
         
@@ -75,27 +109,52 @@ class FloatingWindowManager: ObservableObject {
     }
 }
 
-
-
-
 struct FloatingDynamicIslandView: View {
     @EnvironmentObject var spotifyManager: SpotifyManager
-    @State private var isExpanded = false
+    @EnvironmentObject var windowManager: FloatingWindowManager
     
     var body: some View {
         VStack(spacing: 0) {
-            SpotifyDynamicIsland(
-                spotifyManager: spotifyManager,
-                isExpanded: $isExpanded
+            // Container that's 2 pixels larger than the Dynamic Island
+            ZStack {
+                // Your perfect Dynamic Island (unchanged)
+                SpotifyDynamicIsland(
+                    spotifyManager: spotifyManager,
+                    isExpanded: $windowManager.isExpanded
+                )
+            }
+            .frame(
+                width: (windowManager.isExpanded ? 450 : getCompactWidth()) + 40,
+                height: (windowManager.isExpanded ? 160 : getCompactHeight()) + 2
             )
+            // KEY: This centers the content within the larger frame
+            .contentShape(Rectangle())
+            
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Color.clear)
         .allowsHitTesting(true)
-        .contentShape(Rectangle())
         .onAppear {
             spotifyManager.startMonitoring()
+        }
+    }
+    
+    private func getCompactWidth() -> CGFloat {
+        if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
+            return 260
+        } else {
+            return 200
+        }
+    }
+    
+    private func getCompactHeight() -> CGFloat {
+        if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
+            return 40
+        } else if spotifyManager.isSpotifyRunning {
+            return 32
+        } else {
+            return 28
         }
     }
 }
