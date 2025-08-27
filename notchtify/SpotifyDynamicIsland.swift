@@ -4,6 +4,7 @@ struct SpotifyDynamicIsland: View {
     @ObservedObject var spotifyManager: SpotifyManager
     @Binding var isExpanded: Bool
     @State private var isHovered = false
+    @State private var playingScale: CGFloat = 1.0
     
     var body: some View {
         UnevenRoundedRectangle(
@@ -19,13 +20,17 @@ struct SpotifyDynamicIsland: View {
             width: isExpanded ? 450 : getCompactWidth(),
             height: isExpanded ? 160 : getCompactHeight()
         )
-        .scaleEffect(isHovered && !isExpanded ? 1.05 : 1.0)
+        .scaleEffect(playingScale * (isHovered && !isExpanded ? 1.05 : 1.0))
         .animation(.easeInOut(duration: 0.2), value: isHovered)
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: playingScale)
         .overlay {
             if isExpanded {
                 SpotifyExpandedView(spotifyManager: spotifyManager)
             } else {
-                SpotifyCompactView(spotifyManager: spotifyManager)
+                SpotifyCompactView(
+                    spotifyManager: spotifyManager,
+                    dynamicIslandWidth: getCompactWidth()
+                )
             }
         }
         .onTapGesture {
@@ -48,11 +53,16 @@ struct SpotifyDynamicIsland: View {
                 }
             }
         }
+        .onChange(of: spotifyManager.isPlaying) { oldValue, newValue in
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                playingScale = newValue ? 1.1 : 1.0
+            }
+        }
     }
     
     private func getCompactWidth() -> CGFloat {
         if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
-            return 280
+            return 260
         } else {
             return 200
         }
@@ -71,26 +81,35 @@ struct SpotifyDynamicIsland: View {
 
 struct SpotifyCompactView: View {
     @ObservedObject var spotifyManager: SpotifyManager
+    let dynamicIslandWidth: CGFloat
+    @State private var visualizerVisible = false
     
     var body: some View {
         HStack(spacing: 8) {
             if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
-                if let albumArt = spotifyManager.albumArtImage {
-                    Image(nsImage: albumArt)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 20, height: 20)
-                        .cornerRadius(4)
-                } else {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 20, height: 20)
-                        .overlay {
-                            Image(systemName: "music.note")
-                                .foregroundColor(.green)
-                                .font(.system(size: 8))
-                        }
+                Group {
+                    if let albumArt = spotifyManager.albumArtImage {
+                        Image(nsImage: albumArt)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 20, height: 20)
+                            .cornerRadius(4)
+                    } else {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 20, height: 20)
+                            .overlay {
+                                Image(systemName: "music.note")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 8))
+                            }
+                    }
                 }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.1).combined(with: .opacity),
+                    removal: .identity
+                ))
+                .animation(.spring(response: 1.2, dampingFraction: 0.8), value: spotifyManager.albumArtImage != nil)
                 
                 Spacer()
                 
@@ -99,8 +118,31 @@ struct SpotifyCompactView: View {
                         RoundedRectangle(cornerRadius: 1)
                             .fill(.green)
                             .frame(width: 2, height: CGFloat.random(in: 4...12))
-                            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true).delay(Double(index) * 0.2), value: UUID())
+                            .scaleEffect(visualizerVisible ? 1.0 : 0.1)
+                            .animation(
+                                .spring(response: 1.0, dampingFraction: 0.7)
+                                .delay(Double(index) * 0.2),
+                                value: visualizerVisible
+                            )
+                            .animation(
+                                .easeInOut(duration: 0.6)
+                                .repeatForever(autoreverses: true)
+                                .delay(Double(index) * 0.2),
+                                value: UUID()
+                            )
                     }
+                }
+                .transition(.asymmetric(
+                    insertion: .scale.combined(with: .opacity),
+                    removal: .identity
+                ))
+                .onAppear {
+                    withAnimation(.spring(response: 1.0, dampingFraction: 0.7)) {
+                        visualizerVisible = true
+                    }
+                }
+                .onDisappear {
+                    visualizerVisible = false
                 }
                 
             } else if spotifyManager.isSpotifyRunning {
@@ -108,25 +150,37 @@ struct SpotifyCompactView: View {
                     Image(systemName: "music.note")
                         .foregroundColor(.green)
                         .font(.system(size: 9))
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
                     
                     Text("Ready")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
+                        .transition(.slide.combined(with: .opacity))
                 }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                    removal: .identity
+                ))
                 
             } else {
                 HStack(spacing: 6) {
                     Image(systemName: "music.note")
                         .foregroundColor(.red)
                         .font(.system(size: 8))
+                        .transition(.scale(scale: 0.5).combined(with: .opacity))
                     
                     Text("Offline")
                         .font(.system(size: 8, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
+                        .transition(.slide.combined(with: .opacity))
                 }
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.8).combined(with: .opacity),
+                    removal: .identity
+                ))
             }
         }
-        .padding(.horizontal, 12)
+        .animation(.spring(response: 1.2, dampingFraction: 0.8), value: spotifyManager.isPlaying)
     }
 }
 
@@ -156,19 +210,19 @@ struct SpotifyExpandedView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text(spotifyManager.currentTrack.isEmpty ? "No track" : spotifyManager.currentTrack)
-                            .font(.title2)  // Increased from .headline to .title2
-                            .fontWeight(.semibold)  // Added weight for better readability
+                            .font(.title2)
+                            .fontWeight(.semibold)
                             .foregroundColor(.white)
-                            .lineLimit(2)  // Increased from 1 to 2 lines for longer titles
+                            .lineLimit(2)
                         
                         Text(spotifyManager.currentArtist.isEmpty ? "Unknown artist" : spotifyManager.currentArtist)
-                            .font(.title3)  // Increased from .subheadline to .title3
+                            .font(.title3)
                             .foregroundColor(.white.opacity(0.7))
                             .lineLimit(1)
                         
                         if !spotifyManager.currentAlbum.isEmpty {
                             Text(spotifyManager.currentAlbum)
-                                .font(.body)  // Increased from .caption to .body
+                                .font(.body)
                                 .foregroundColor(.white.opacity(0.5))
                                 .lineLimit(1)
                         }
@@ -185,13 +239,13 @@ struct SpotifyExpandedView: View {
                         
                         HStack {
                             Text(formatTime(spotifyManager.trackPosition))
-                                .font(.caption)  // Increased from .caption2 to .caption
+                                .font(.caption)
                                 .foregroundColor(.white.opacity(0.6))
                             
                             Spacer()
                             
                             Text(formatTime(spotifyManager.trackDuration))
-                                .font(.caption)  // Increased from .caption2 to .caption
+                                .font(.caption)
                                 .foregroundColor(.white.opacity(0.6))
                         }
                     }
@@ -203,7 +257,7 @@ struct SpotifyExpandedView: View {
                     } label: {
                         Image(systemName: "backward.fill")
                             .foregroundColor(.white.opacity(0.8))
-                            .font(.title)  // Increased from .title2 to .title
+                            .font(.title)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -212,7 +266,7 @@ struct SpotifyExpandedView: View {
                     } label: {
                         Image(systemName: spotifyManager.isPlaying ? "pause.fill" : "play.fill")
                             .foregroundColor(.white)
-                            .font(.largeTitle)  // Increased from .title to .largeTitle
+                            .font(.largeTitle)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
@@ -221,7 +275,7 @@ struct SpotifyExpandedView: View {
                     } label: {
                         Image(systemName: "forward.fill")
                             .foregroundColor(.white.opacity(0.8))
-                            .font(.title)  // Increased from .title2 to .title
+                            .font(.title)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -236,7 +290,7 @@ struct SpotifyExpandedView: View {
                         .font(.headline)
                         .foregroundColor(.white)
                     
-                    Text("Please open Spotify to control playback")
+                    Text("Please open Spotify to control playbook")
                         .font(.caption)
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)

@@ -44,7 +44,6 @@ class FloatingWindowManager: ObservableObject {
         
         guard let window = floatingWindow else { return }
         
-        // Higher window level to float above menu bar but allow clicks
         window.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.mainMenuWindow)) + 1)
         window.isOpaque = false
         window.hasShadow = false
@@ -55,7 +54,7 @@ class FloatingWindowManager: ObservableObject {
         
         window.contentView = NSHostingView(rootView: floatingView)
         
-        positionInNotch(window) // Changed method name for clarity
+        positionInNotch(window)
         window.orderFront(nil)
     }
     
@@ -65,9 +64,8 @@ class FloatingWindowManager: ObservableObject {
         let screenFrame = screen.frame
         let windowSize = window.frame.size
         
-        // Position directly at the top center (in the notch area)
         let x = screenFrame.midX - (windowSize.width / 2)
-        let y = screenFrame.maxY - windowSize.height // Position at very top
+        let y = screenFrame.maxY - windowSize.height
         
         window.setFrame(
             NSRect(x: x, y: y, width: windowSize.width, height: windowSize.height),

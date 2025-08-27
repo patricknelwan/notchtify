@@ -18,7 +18,6 @@ struct ContentView: View {
             Divider()
                 .padding(.horizontal, 20)
             
-            // Status Section
             VStack(spacing: 12) {
                 Text("Status")
                     .font(.headline)
@@ -40,7 +39,6 @@ struct ContentView: View {
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(8)
                 
-                // Current Track Info (if playing)
                 if spotifyManager.isSpotifyRunning && spotifyManager.isPlaying {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Now Playing")
@@ -86,7 +84,6 @@ struct ContentView: View {
                 }
             }
             
-            // Playback Controls
             if spotifyManager.isSpotifyRunning {
                 VStack(spacing: 12) {
                     Text("Controls")
@@ -115,7 +112,6 @@ struct ContentView: View {
                 }
             }
             
-            // Settings Section
             VStack(spacing: 12) {
                 Text("Settings")
                     .font(.headline)
@@ -127,7 +123,6 @@ struct ContentView: View {
                     Divider()
                         .padding(.vertical, 4)
                     
-                    // Additional Settings Placeholders
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Appearance")
                             .font(.subheadline)
@@ -155,7 +150,6 @@ struct ContentView: View {
             
             Spacer()
             
-            // Footer
             VStack(spacing: 8) {
                 Text("Check your menu bar for the Dynamic Island!")
                     .font(.caption)
@@ -169,7 +163,6 @@ struct ContentView: View {
                     .buttonStyle(.bordered)
                     
                     Button("About") {
-                        // Show about dialog
                     }
                     .buttonStyle(.bordered)
                 }
