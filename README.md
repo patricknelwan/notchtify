@@ -54,11 +54,6 @@ Album art uses Spotify Web API credentials.
 - Fill in SpotifyClientID and SpotifyClientSecret
 
 3) Keep credentials private
-- Config.plist is ignored by git
-- If it was committed before, run:
-  - git rm --cached Config.plist
-  - git commit -m "Remove Config.plist from tracking"
-  - git push
 
 ---
 
