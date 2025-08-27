@@ -59,24 +59,9 @@ class FloatingWindowManager: ObservableObject {
     }
     
     private func getBuiltInScreen() -> NSScreen? {
-        // Try multiple methods to find the built-in display
-        
-        // Method 1: Look for built-in display by name
-        if let builtIn = NSScreen.screens.first(where: { screen in
-            screen.localizedName.contains("Built-in") ||
-            screen.localizedName.contains("Retina")
-        }) {
-            return builtIn
-        }
-        
-        // Method 2: The first screen in the array is usually the built-in
-        if let firstScreen = NSScreen.screens.first {
-            return firstScreen
-        }
-        
-        // Method 3: Fallback to main screen
-        return NSScreen.main
+        return NSScreen.screens.first
     }
+
     
     private func updateWindowFrameInstantly() {
         guard let window = floatingWindow else { return }
