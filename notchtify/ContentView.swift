@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var spotifyManager = SpotifyManager()
+    @EnvironmentObject var spotifyManager: SpotifyManager
     
     var body: some View {
         VStack(spacing: 25) {
