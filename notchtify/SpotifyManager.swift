@@ -20,6 +20,8 @@ class SpotifyManager: ObservableObject {
     private let webAPIManager = SpotifyWebAPIManager()
     private var hasInitiallyLoaded = false
     
+    private let albumArtPrefetcher = AlbumArtPrefetcher()
+    
     init() {
         checkSpotifyStatus()
     }
@@ -173,11 +175,10 @@ class SpotifyManager: ObservableObject {
                             self.albumArtImage = nil
                             
                             if !newTrack.isEmpty && newTrack != "No track playing" {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    self.webAPIManager.fetchAlbumArt(track: newTrack, artist: newArtist) { image in
-                                        DispatchQueue.main.async {
-                                            self.albumArtImage = image
-                                        }
+                                self.albumArtPrefetcher.getAlbumArt(
+                                    track: newTrack, artist: newArtist, webAPIManager: self.webAPIManager) { image in
+                                    DispatchQueue.main.async {
+                                        self.albumArtImage = image
                                     }
                                 }
                             }
@@ -205,8 +206,27 @@ class SpotifyManager: ObservableObject {
     }
     
     func nextTrack() {
-        executeSimpleSpotifyCommand("next track")
+        let script = """
+        tell application "Spotify"
+            try
+                next track
+                return "SUCCESS"
+            on error
+                return "ERROR"
+            end try
+        end tell
+        """
+        
+        executeAppleScript(script) { result in
+            let resultString = result?.stringValue ?? "UNKNOWN"
+            print("🎮 Command 'next track' result: \(resultString)")
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                self.updateSpotifyStatus()
+            }
+        }
     }
+
     
     func previousTrack() {
         executeSimpleSpotifyCommand("previous track")
