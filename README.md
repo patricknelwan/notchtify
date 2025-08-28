@@ -4,6 +4,16 @@ Transform your MacBook’s notch into a Dynamic Island for Spotify.
 
 Notchtify creates a floating, interactive island at the top of the screen that shows what’s playing on Spotify, with album art, status, and quick controls.
 
+### Compact View (Playing)
+<div align="center">
+  <img src="images/playing-minimized.png" alt="Compact Playing">
+</div>
+
+### Expanded View (Playing)
+<div align="center">
+  <img src="images/playing-expanded.png" alt="Expanded Playing" width="70%">
+</div>
+
 ---
 
 ## Features
@@ -13,14 +23,14 @@ Notchtify creates a floating, interactive island at the top of the screen that s
 - Live album artwork via Spotify Web API
 - Playback controls: play/pause, next, previous
 - Auto-expand on track change
-- Hover enlarge (configurable)
+- Hover enlarge
 - Lightweight SwiftUI + AppKit implementation
 
 ---
 
 ## Requirements
 
-- macOS 13+ (Ventura or newer)
+- macOS 15+
 - Spotify desktop app
 - Internet connection (for album art)
 
