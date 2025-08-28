@@ -28,6 +28,8 @@ class FloatingWindowManager: ObservableObject {
         }
     }
     
+    @Published var isContainerExpanded = false
+    
     func createFloatingWindow(spotifyManager: SpotifyManager) {
         builtInScreen = getBuiltInScreen()
         
@@ -65,8 +67,6 @@ class FloatingWindowManager: ObservableObject {
     
     private func updateWindowFrameInstantly() {
         guard let window = floatingWindow else { return }
-        
-        // Always use the built-in screen, not the current main screen
         guard let screen = builtInScreen else { return }
         let screenFrame = screen.frame
         
@@ -75,15 +75,21 @@ class FloatingWindowManager: ObservableObject {
         
         let centeredX = screenFrame.midX - (newWidth / 2)
         
+        let compactHeight: CGFloat = getCompactHeight()
+        let topY = screenFrame.maxY - compactHeight
+        let newY = topY - (newHeight - compactHeight)
+        
         let centeredFrame = NSRect(
             x: centeredX,
-            y: screenFrame.maxY - newHeight,
+            y: newY,
             width: newWidth,
             height: newHeight
         )
         
         window.setFrame(centeredFrame, display: false, animate: false)
     }
+
+
     
     private func positionInNotch(_ window: NSWindow) {
         // Use built-in screen for initial positioning too
@@ -121,7 +127,8 @@ struct FloatingDynamicIslandView: View {
             ZStack {
                 SpotifyDynamicIsland(
                     spotifyManager: spotifyManager,
-                    isExpanded: $windowManager.isExpanded
+                    isExpanded: $windowManager.isExpanded,
+                    windowManager: windowManager
                 )
             }
             .frame(
@@ -133,7 +140,7 @@ struct FloatingDynamicIslandView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.clear)
+        .background(Color.clear) // To see the container
         .allowsHitTesting(true)
         .onAppear {
             spotifyManager.startMonitoring()
@@ -158,4 +165,3 @@ struct FloatingDynamicIslandView: View {
         }
     }
 }
-
