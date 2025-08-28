@@ -20,6 +20,8 @@ class SpotifyManager: ObservableObject {
     private let webAPIManager = SpotifyWebAPIManager()
     private var hasInitiallyLoaded = false
     
+    private let albumArtProvider = AlbumArtProvider()
+    
     init() {
         checkSpotifyStatus()
     }
@@ -173,11 +175,10 @@ class SpotifyManager: ObservableObject {
                             self.albumArtImage = nil
                             
                             if !newTrack.isEmpty && newTrack != "No track playing" {
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    self.webAPIManager.fetchAlbumArt(track: newTrack, artist: newArtist) { image in
-                                        DispatchQueue.main.async {
-                                            self.albumArtImage = image
-                                        }
+                                self.albumArtProvider.getAlbumArt(
+                                    track: newTrack, artist: newArtist, webAPIManager: self.webAPIManager) { image in
+                                    DispatchQueue.main.async {
+                                        self.albumArtImage = image
                                     }
                                 }
                             }
