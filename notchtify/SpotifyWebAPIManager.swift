@@ -102,6 +102,48 @@ class SpotifyWebAPIManager: ObservableObject {
             }
         }.resume()
     }
+    
+    func fetchAlbumArtAsync(track: String, artist: String, completion: @escaping (NSImage?) -> Void) -> URLSessionDataTask? {
+        
+        guard let accessToken = self.accessToken else {
+            completion(nil)
+            return nil
+        }
+        
+        let query = "\(track) artist:\(artist)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let url = URL(string: "https://api.spotify.com/v1/search?q=\(query)&type=track&limit=1")!
+        
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            
+            // Simplified version:
+            if let data = data,
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let tracks = json["tracks"] as? [String: Any],
+               let items = tracks["items"] as? [[String: Any]],
+               let firstTrack = items.first,
+               let album = firstTrack["album"] as? [String: Any],
+               let images = album["images"] as? [[String: Any]],
+               let imageUrl = images.first?["url"] as? String,
+               let url = URL(string: imageUrl) {
+                
+                URLSession.shared.dataTask(with: url) { data, _, _ in
+                    if let data = data, let image = NSImage(data: data) {
+                        completion(image)
+                    } else {
+                        completion(nil)
+                    }
+                }.resume()
+            } else {
+                completion(nil)
+            }
+        }
+        
+        task.resume()
+        return task
+    }
 }
 
 struct TokenResponse: Codable {
