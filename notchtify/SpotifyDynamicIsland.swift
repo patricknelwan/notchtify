@@ -6,6 +6,7 @@ struct SpotifyDynamicIsland: View {
     @State private var isHovered = false
     @State private var playingScale: CGFloat = 1.0
     @State private var accentColor: Color = Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
+    @State private var autoCollapseTimer: Timer?
     
     var body: some View {
         UnevenRoundedRectangle(
@@ -46,15 +47,23 @@ struct SpotifyDynamicIsland: View {
         }
         .onChange(of: spotifyManager.currentTrack) { oldValue, newValue in
             if spotifyManager.autoExpand && spotifyManager.isPlaying {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                    isExpanded = true
+                autoCollapseTimer?.invalidate()
+                
+                if !isExpanded {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                        isExpanded = true
+                    }
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                
+                autoCollapseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                         isExpanded = false
                     }
                 }
             }
+        }
+        .onDisappear {
+            autoCollapseTimer?.invalidate()
         }
         .onChange(of: spotifyManager.isPlaying) { oldValue, newValue in
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
