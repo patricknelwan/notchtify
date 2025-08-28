@@ -5,6 +5,7 @@ struct SpotifyDynamicIsland: View {
     @Binding var isExpanded: Bool
     @State private var isHovered = false
     @State private var playingScale: CGFloat = 1.0
+    @State private var accentColor: Color = Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
     
     var body: some View {
         UnevenRoundedRectangle(
@@ -25,11 +26,13 @@ struct SpotifyDynamicIsland: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: playingScale)
         .overlay {
             if isExpanded {
-                SpotifyExpandedView(spotifyManager: spotifyManager)
+                SpotifyExpandedView(spotifyManager: spotifyManager,
+                                    accentColor: accentColor)
             } else {
                 SpotifyCompactView(
                     spotifyManager: spotifyManager,
-                    dynamicIslandWidth: getCompactWidth()
+                    dynamicIslandWidth: getCompactWidth(),
+                    accentColor: $accentColor
                 )
             }
         }
@@ -58,6 +61,11 @@ struct SpotifyDynamicIsland: View {
                 playingScale = newValue ? 1.1 : 1.0
             }
         }
+        .onChange(of: spotifyManager.albumArtImage) { oldValue, newValue in
+            if let newImage = newValue {
+                accentColor = extractDominantColor(from: newImage)
+            }
+        }
     }
     
     private func getCompactWidth() -> CGFloat {
@@ -77,12 +85,60 @@ struct SpotifyDynamicIsland: View {
             return 28
         }
     }
+    
+    private func extractDominantColor(from image: NSImage) -> Color {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33) 
+        }
+        
+        let width = min(cgImage.width, 50)
+        let height = min(cgImage.height, 50)
+        
+        guard let context = CGContext(data: nil,
+                                      width: width,
+                                      height: height,
+                                      bitsPerComponent: 8,
+                                      bytesPerRow: width * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            return Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
+        }
+        
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        guard let data = context.data else {
+            return Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
+        }
+        let buffer = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        
+        var red: Float = 0
+        var green: Float = 0
+        var blue: Float = 0
+        var pixelCount: Float = 0
+        
+        for i in stride(from: 0, to: width * height * 4, by: 4) {
+            red += Float(buffer[i])
+            green += Float(buffer[i + 1])
+            blue += Float(buffer[i + 2])
+            pixelCount += 1
+        }
+        
+        red /= pixelCount
+        green /= pixelCount
+        blue /= pixelCount
+        
+        return Color(.sRGB,
+                    red: Double(red) / 255.0,
+                    green: Double(green) / 255.0,
+                    blue: Double(blue) / 255.0)
+    }
 }
 
 struct SpotifyCompactView: View {
     @ObservedObject var spotifyManager: SpotifyManager
     let dynamicIslandWidth: CGFloat
     @State private var visualizerVisible = false
+    @Binding var accentColor: Color
     
     var body: some View {
         HStack(spacing: 8) {
@@ -100,7 +156,7 @@ struct SpotifyCompactView: View {
                             .frame(width: 20, height: 20)
                             .overlay {
                                 Image(systemName: "music.note")
-                                    .foregroundColor(.green)
+                                    .foregroundColor(accentColor)
                                     .font(.system(size: 8))
                             }
                     }
@@ -116,7 +172,7 @@ struct SpotifyCompactView: View {
                 HStack(spacing: 1) {
                     ForEach(0..<3) { index in
                         RoundedRectangle(cornerRadius: 1)
-                            .fill(.green)
+                            .fill(accentColor) // Already changed - good
                             .frame(width: 2, height: CGFloat.random(in: 4...12))
                             .scaleEffect(visualizerVisible ? 1.0 : 0.1)
                             .animation(
@@ -141,6 +197,7 @@ struct SpotifyCompactView: View {
                         visualizerVisible = true
                     }
                 }
+
                 .onDisappear {
                     visualizerVisible = false
                 }
@@ -148,7 +205,7 @@ struct SpotifyCompactView: View {
             } else if spotifyManager.isSpotifyRunning {
                 HStack(spacing: 6) {
                     Image(systemName: "music.note")
-                        .foregroundColor(.green)
+                        .foregroundColor(accentColor) // Changed from .green
                         .font(.system(size: 9))
                         .transition(.scale(scale: 0.5).combined(with: .opacity))
                     
@@ -184,8 +241,11 @@ struct SpotifyCompactView: View {
     }
 }
 
+
+
 struct SpotifyExpandedView: View {
     @ObservedObject var spotifyManager: SpotifyManager
+    let accentColor: Color
     
     var body: some View {
         VStack(spacing: 15) {
@@ -234,7 +294,7 @@ struct SpotifyExpandedView: View {
                 if spotifyManager.showProgress && spotifyManager.trackDuration > 0 {
                     VStack(spacing: 4) {
                         ProgressView(value: spotifyManager.trackPosition, total: spotifyManager.trackDuration)
-                            .progressViewStyle(LinearProgressViewStyle(tint: .green))
+                            .progressViewStyle(LinearProgressViewStyle(tint: accentColor))
                             .scaleEffect(y: 0.5)
                         
                         HStack {
