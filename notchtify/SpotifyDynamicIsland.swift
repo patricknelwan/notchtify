@@ -31,25 +31,27 @@ struct SpotifyDynamicIsland: View {
             if isExpanded {
                 SpotifyExpandedView(spotifyManager: spotifyManager,
                                     accentColor: accentColor)
+                .transition(.scale.combined(with: .opacity))
             } else {
                 SpotifyCompactView(
                     spotifyManager: spotifyManager,
                     dynamicIslandWidth: getCompactWidth(),
                     accentColor: $accentColor
                 )
+                .transition(.scale.combined(with: .opacity))
             }
         }
         .onTapGesture {
             if !isExpanded {
                 windowManager.isContainerExpanded = true
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.125) {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.3)) {
                         isExpanded = true
                     }
                 }
             } else {
                 windowManager.isContainerExpanded = false
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.3)) {
                     isExpanded = false
                 }
             }
