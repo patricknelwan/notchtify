@@ -7,6 +7,7 @@ struct SpotifyDynamicIsland: View {
     @State private var playingScale: CGFloat = 1.0
     @State private var accentColor: Color = Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
     @State private var autoCollapseTimer: Timer?
+    @State private var viewToggle = false
     let windowManager: FloatingWindowManager
     
     var body: some View {        
@@ -29,18 +30,20 @@ struct SpotifyDynamicIsland: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: playingScale)
         .overlay {
             if isExpanded {
-                SpotifyExpandedView(spotifyManager: spotifyManager,
-                                    accentColor: accentColor)
-                .transition(.scale.combined(with: .opacity))
+                SpotifyExpandedView(spotifyManager: spotifyManager, accentColor: accentColor)
+                    .transition(.opacity)
+                    .id("\(spotifyManager.currentTrack)_\(viewToggle)")
             } else {
                 SpotifyCompactView(
                     spotifyManager: spotifyManager,
                     dynamicIslandWidth: getCompactWidth(),
                     accentColor: $accentColor
                 )
-                .transition(.scale.combined(with: .opacity))
+                .transition(.opacity)
+                .id("\(spotifyManager.currentTrack)_\(viewToggle)")
             }
         }
+
         .onTapGesture {
             if !isExpanded {
                 windowManager.isContainerExpanded = true
@@ -58,6 +61,14 @@ struct SpotifyDynamicIsland: View {
             isHovered = hovering
         }
         .onChange(of: spotifyManager.currentTrack) { oldValue, newValue in
+            withAnimation(.easeInOut(duration: 0.8)) {
+                viewToggle.toggle()
+                
+                if let albumImage = spotifyManager.albumArtImage {
+                    accentColor = extractDominantColor(from: albumImage)
+                }
+            }
+            
             if spotifyManager.autoExpand && spotifyManager.isPlaying {
                 autoCollapseTimer?.invalidate()
                 
@@ -84,8 +95,10 @@ struct SpotifyDynamicIsland: View {
             }
         }
         .onChange(of: spotifyManager.albumArtImage) { oldValue, newValue in
-            if let newImage = newValue {
-                accentColor = extractDominantColor(from: newImage)
+            withAnimation(.easeInOut(duration: 0.5)) {
+                if let newImage = newValue {
+                    accentColor = extractDominantColor(from: newImage)
+                }
             }
         }
     }
