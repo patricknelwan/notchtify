@@ -7,8 +7,10 @@ struct SpotifyDynamicIsland: View {
     @State private var playingScale: CGFloat = 1.0
     @State private var accentColor: Color = Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
     @State private var autoCollapseTimer: Timer?
+    @State private var viewToggle = false
+    let windowManager: FloatingWindowManager
     
-    var body: some View {
+    var body: some View {        
         UnevenRoundedRectangle(
             cornerRadii: .init(
                 topLeading: 0,
@@ -20,32 +22,53 @@ struct SpotifyDynamicIsland: View {
         .fill(.black)
         .frame(
             width: isExpanded ? 450 : getCompactWidth(),
-            height: isExpanded ? 160 : getCompactHeight()
+            height: isExpanded ? 160 : getCompactHeight(),
+            alignment: .top
         )
         .scaleEffect(playingScale * (isHovered && !isExpanded ? 1.05 : 1.0))
         .animation(.easeInOut(duration: 0.2), value: isHovered)
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: playingScale)
         .overlay {
             if isExpanded {
-                SpotifyExpandedView(spotifyManager: spotifyManager,
-                                    accentColor: accentColor)
+                SpotifyExpandedView(spotifyManager: spotifyManager, accentColor: accentColor)
+                    .transition(.opacity)
+                    .id("\(spotifyManager.currentTrack)_\(viewToggle)")
             } else {
                 SpotifyCompactView(
                     spotifyManager: spotifyManager,
                     dynamicIslandWidth: getCompactWidth(),
                     accentColor: $accentColor
                 )
+                .transition(.opacity)
+                .id("\(spotifyManager.currentTrack)_\(viewToggle)")
             }
         }
+
         .onTapGesture {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                isExpanded.toggle()
+            if !isExpanded {
+                windowManager.isContainerExpanded = true
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    isExpanded = true
+                }
+            } else {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    isExpanded = false
+                    windowManager.isContainerExpanded = false
+                }
             }
         }
         .onHover { hovering in
             isHovered = hovering
         }
         .onChange(of: spotifyManager.currentTrack) { oldValue, newValue in
+            withAnimation(.easeInOut(duration: 0.8)) {
+                viewToggle.toggle()
+                
+                if let albumImage = spotifyManager.albumArtImage {
+                    accentColor = extractDominantColor(from: albumImage)
+                }
+            }
+            
             if spotifyManager.autoExpand && spotifyManager.isPlaying {
                 autoCollapseTimer?.invalidate()
                 
@@ -58,6 +81,7 @@ struct SpotifyDynamicIsland: View {
                 autoCollapseTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                         isExpanded = false
+                        windowManager.isContainerExpanded = false
                     }
                 }
             }
@@ -71,8 +95,10 @@ struct SpotifyDynamicIsland: View {
             }
         }
         .onChange(of: spotifyManager.albumArtImage) { oldValue, newValue in
-            if let newImage = newValue {
-                accentColor = extractDominantColor(from: newImage)
+            withAnimation(.easeInOut(duration: 0.5)) {
+                if let newImage = newValue {
+                    accentColor = extractDominantColor(from: newImage)
+                }
             }
         }
     }
@@ -97,7 +123,7 @@ struct SpotifyDynamicIsland: View {
     
     private func extractDominantColor(from image: NSImage) -> Color {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
-            return Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33) 
+            return Color(.sRGB, red: 0.11, green: 0.73, blue: 0.33)
         }
         
         let width = min(cgImage.width, 50)
@@ -368,6 +394,7 @@ struct SpotifyExpandedView: View {
         }
         .padding(.horizontal, 25)
         .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
     
     private func formatTime(_ seconds: Double) -> String {
