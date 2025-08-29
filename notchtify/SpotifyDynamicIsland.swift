@@ -44,15 +44,13 @@ struct SpotifyDynamicIsland: View {
         .onTapGesture {
             if !isExpanded {
                 windowManager.isContainerExpanded = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.125) {
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.3)) {
-                        isExpanded = true
-                    }
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                    isExpanded = true
                 }
             } else {
-                windowManager.isContainerExpanded = false
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8, blendDuration: 0.3)) {
+                withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                     isExpanded = false
+                    windowManager.isContainerExpanded = false
                 }
             }
         }

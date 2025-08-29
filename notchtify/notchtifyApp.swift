@@ -30,6 +30,9 @@ class FloatingWindowManager: ObservableObject {
     
     @Published var isContainerExpanded = false
     
+    @Published var shouldExpand = false
+    @Published var shouldCollapse = false
+    
     func createFloatingWindow(spotifyManager: SpotifyManager) {
         builtInScreen = getBuiltInScreen()
         
