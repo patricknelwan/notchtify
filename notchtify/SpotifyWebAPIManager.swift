@@ -7,16 +7,24 @@ class SpotifyWebAPIManager: ObservableObject {
     private var accessToken: String?
     
     init() {
-        guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
-              let plist = NSDictionary(contentsOfFile: path),
-              let clientId = plist["SpotifyClientID"] as? String,
-              let clientSecret = plist["SpotifyClientSecret"] as? String else {
-            fatalError("Could not load Spotify API credentials from Config.plist")
+        if let envClientId = ProcessInfo.processInfo.environment["SPOTIFY_CLIENT_ID"],
+           let envClientSecret = ProcessInfo.processInfo.environment["SPOTIFY_CLIENT_SECRET"],
+           !envClientId.isEmpty, !envClientSecret.isEmpty {
+            
+            self.clientId = envClientId
+            self.clientSecret = envClientSecret
+            
+        } else {
+            guard let path = Bundle.main.path(forResource: "Config", ofType: "plist"),
+                  let plist = NSDictionary(contentsOfFile: path),
+                  let clientId = plist["SpotifyClientID"] as? String,
+                  let clientSecret = plist["SpotifyClientSecret"] as? String else {
+                fatalError("Could not load Spotify API credentials from Config.plist or environment variables")
+            }
+            
+            self.clientId = clientId
+            self.clientSecret = clientSecret
         }
-        
-        self.clientId = clientId
-        self.clientSecret = clientSecret
-        
         getClientCredentialsToken()
     }
     
