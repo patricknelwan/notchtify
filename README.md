@@ -54,17 +54,6 @@ Notchtify creates an interactive notch for MacBooks that have a notch, notchtify
 ## Configuration
 Album art requires Spotify Web API credentials. Choose one of the following methods:
 
-### Method 1: Environment Variables (Recommended)
-1) Create an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Create App → note Client ID and Client Secret
-2) In Xcode:
-   - Go to Product → Scheme → Edit Scheme
-   - Select "Run" → "Arguments" → "Environment Variables"
-   - Add:
-     - `SPOTIFY_CLIENT_ID`: Your Spotify Client ID
-     - `SPOTIFY_CLIENT_SECRET`: Your Spotify Client Secret
-
-### Method 2: Config.plist (Alternative)
 1) Create an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
    - Create App → note Client ID and Client Secret
 2) Configure the app:
