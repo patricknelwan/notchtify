@@ -45,12 +45,12 @@ class SpotifyManager: ObservableObject {
         guard !hasInitiallyLoaded && isSpotifyRunning && isPlaying else { return }
         
         if !currentTrack.isEmpty && currentTrack != "No track playing" && albumArtImage == nil {
-//            print("🎨 Force fetching album art for: \(currentTrack) - \(currentArtist)")
+            print("🎨 Force fetching album art for: \(currentTrack) - \(currentArtist)")
             webAPIManager.fetchAlbumArt(track: currentTrack, artist: currentArtist) { image in
                 DispatchQueue.main.async {
                     self.albumArtImage = image
                     self.hasInitiallyLoaded = true
-//                    print(image != nil ? "✅ Initial album art loaded" : "❌ Initial album art failed")
+                    print(image != nil ? "✅ Initial album art loaded" : "❌ Initial album art failed")
                 }
             }
         }
@@ -74,7 +74,7 @@ class SpotifyManager: ObservableObject {
         executeAppleScript(script) { result in
             DispatchQueue.main.async {
                 if let resultString = result?.stringValue {
-//                    print("✅ Spotify detection: \(resultString)")
+                    print("✅ Spotify detection: \(resultString)")
                     self.isSpotifyRunning = (resultString == "RUNNING")
                     
                     if self.isSpotifyRunning {
@@ -113,7 +113,7 @@ class SpotifyManager: ObservableObject {
         executeAppleScript(script) { result in
             DispatchQueue.main.async {
                 if let resultString = result?.stringValue {
-//                    print("🎵 Spotify response: \(resultString)")
+                    print("🎵 Spotify response: \(resultString)")
                     
                     if resultString.contains("|||") {
                         let components = resultString.components(separatedBy: "|||")
@@ -129,7 +129,7 @@ class SpotifyManager: ObservableObject {
                         self.isPlaying = false
                     } else if resultString == "SPOTIFY_ERROR" && self.retryCount < self.maxRetries {
                         self.retryCount += 1
-//                        print("🔄 Retrying Spotify connection (\(self.retryCount)/\(self.maxRetries))")
+                        print("🔄 Retrying Spotify connection (\(self.retryCount)/\(self.maxRetries))")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                             self.attemptSpotifyConnection()
                         }
@@ -246,7 +246,7 @@ class SpotifyManager: ObservableObject {
         
         executeAppleScript(script) { result in
             if let resultString = result?.stringValue {
-//                print("🎮 Command '\(command)' result: \(resultString)")
+                print("🎮 Command '\(command)' result: \(resultString)")
                 if resultString == "SUCCESS" {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         self.updateSpotifyStatus()
